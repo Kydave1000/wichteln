@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wichteln</title>
+<style>
+:root{--bg:#e9f0ee;--card:#fff;--ink:#16302b;--mute:#5d716c;--line:#c9d7d3;--red:#c4122f;--redink:#fff;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1d1a;--card:#18302b;--ink:#eaf3f0;--mute:#9bb2ac;--line:#2b4741;--red:#e0344f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1d1a;--card:#18302b;--ink:#eaf3f0;--mute:#9bb2ac;--line:#2b4741;--red:#e0344f;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:500 17px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+main{max-width:32rem;margin:0 auto;padding:2rem 1.25rem 3rem}
+h1{font-size:2.4rem;line-height:1.05;font-weight:800;margin:0 0 .5rem;letter-spacing:-.02em}
+p{margin:0 0 1.1rem;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.25rem;margin-bottom:1.25rem}
+input,textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:.7rem .9rem;margin-bottom:.6rem}
+textarea{resize:vertical;min-height:5.5rem;font-size:.95rem}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+button{font:inherit;font-weight:800;border:0;border-radius:10px;padding:.7rem 1.1rem;cursor:pointer;background:var(--red);color:var(--redink)}
+button.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+button.sm{padding:.35rem .8rem;font-size:.9rem}
+button:disabled{opacity:.4;cursor:not-allowed}
+.tabs{display:flex;gap:.5rem;margin-bottom:1.25rem}
+.tabs button{flex:1}
+.big{width:100%;padding:1rem;font-size:1.1rem}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.8rem 0}
+.chip{display:inline-flex;align-items:center;gap:.2rem;border:1.5px solid var(--line);border-radius:99px;padding:.15rem .3rem .15rem .8rem}
+.chip button{background:transparent;color:var(--mute);padding:.1rem .5rem;font-size:1.2rem}
+.row{display:flex;gap:.5rem}
+.row input{margin-bottom:0}
+ul{list-style:none;margin:1rem 0;padding:0}
+li{display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:.55rem 0;border-bottom:1px solid var(--line)}
+.gift{position:relative;border-radius:14px;padding:2.2rem 1rem;text-align:center;background:var(--red);color:var(--redink);overflow:hidden;margin-bottom:1rem}
+.gift::before,.gift::after{content:"";position:absolute;background:rgba(255,255,255,.85)}
+.gift::before{left:50%;top:0;bottom:0;width:1.4rem;margin-left:-.7rem}
+.gift::after{top:50%;left:0;right:0;height:1.4rem;margin-top:-.7rem}
+.gift span{position:relative;z-index:1;background:var(--red);padding:.3rem .8rem;border-radius:8px;font-weight:800;font-size:1.3rem}
+.res{border:2px solid var(--red);border-radius:14px;padding:1.5rem 1rem;text-align:center;margin-top:1rem}
+.res b{display:block;font-size:2.4rem;line-height:1.1;margin-top:.3rem;color:var(--red);overflow-wrap:anywhere}
+.err{color:var(--red);margin:.2rem 0 .6rem}
+.small{font-size:.9rem;color:var(--mute)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+ <h1>Wichteln</h1>
+ <p>Jede Person bekommt einen eigenen Code. Der Code allein zeigt, wen sie beschenkt.</p>
+ <div class="tabs">
+  <button id="tDraw">Ich habe einen Code</button>
+  <button id="tMake" class="ghost">Losung erstellen</button>
+ </div>
+
+ <section id="draw" class="card">
+  <div class="gift"><span>Wichtel verdeckt</span></div>
+  <textarea id="code" placeholder="Deinen Code einfügen" aria-label="Code" spellcheck="false" autocomplete="off"></textarea>
+  <div class="err" id="derr"></div>
+  <button class="big" id="show">Wichtel anzeigen</button>
+  <div id="out"></div>
+ </section>
+
+ <section id="make" class="card" hidden>
+  <div class="row"><input id="nn" placeholder="Name" maxlength="30" autocomplete="off"><button id="add">Hinzufügen</button></div>
+  <div class="chips" id="chips"></div>
+  <input id="note" placeholder="Hinweis, z. B. Budget 15 €" maxlength="60">
+  <div class="err" id="merr"></div>
+  <button class="big" id="mk" disabled>Losung erstellen</button>
+  <div id="res" hidden style="margin-top:1.2rem">
+   <p style="margin-bottom:.5rem">Schicke jeder Person nur ihre eigene Nachricht. Ist unten der Link eingetragen, steckt der Code direkt darin.</p>
+   <input id="link" placeholder="Link zu dieser Seite (optional)">
+   <ul id="codes"></ul>
+   <p class="small">Die Codes werden nur hier erzeugt und nirgends gespeichert. Schließt du die Seite, sind sie weg. Merke dir die Zuordnung nicht, sonst verdirbst du dir die Überraschung.</p>
+  </div>
+ </section>
+</main>
+<script>
+(function(){
+ var $=function(i){return document.getElementById(i)};
+ var names=[];
+
+ function enc(o){return "W"+btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+ function dec(s){
+  s=s.replace(/\s+/g,"");
+  if(s.charAt(0)!=="W")throw 0;
+  s=s.slice(1).replace(/-/g,"+").replace(/_/g,"/");
+  while(s.length%4)s+="=";
+  return JSON.parse(decodeURIComponent(escape(atob(s))));
+ }
+ function key(n){return n.trim().toLowerCase()}
+ function rnd(n){var a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;do{crypto.getRandomValues(a)}while(a[0]>=lim);return a[0]%n}
+
+ function tab(t){
+  $("draw").hidden=t!=="draw";$("make").hidden=t!=="make";
+  $("tDraw").className=t==="draw"?"":"ghost";$("tMake").className=t==="make"?"":"ghost";
+ }
+ $("tDraw").onclick=function(){tab("draw")};
+ $("tMake").onclick=function(){tab("make")};
+
+ function renderChips(){
+  var c=$("chips");c.innerHTML="";
+  names.forEach(function(n,k){
+   var s=document.createElement("span");s.className="chip";
+   var t=document.createElement("span");t.textContent=n;
+   var b=document.createElement("button");b.textContent="×";b.setAttribute("aria-label",n+" entfernen");
+   b.onclick=function(){names.splice(k,1);renderChips()};
+   s.appendChild(t);s.appendChild(b);c.appendChild(s);
+  });
+  $("mk").disabled=names.length<3;
+  $("merr").textContent=names.length<3?"Mindestens 3 Namen nötig ("+names.length+" bisher).":"";
+  $("res").hidden=true;
+ }
+ function add(){
+  var v=$("nn").value.trim().toLocaleUpperCase("de-DE");if(!v)return;
+  if(names.some(function(x){return key(x)===key(v)})){$("merr").textContent="„"+v+"“ steht schon in der Liste.";return}
+  names.push(v);$("nn").value="";renderChips();$("nn").focus();
+ }
+ $("add").onclick=add;
+ $("nn").onkeydown=function(e){if(e.key==="Enter")add()};
+
+ function copy(t,btn,label){
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){btn.textContent="Kopiert"},function(){
+   var ta=document.createElement("textarea");ta.value=t;ta.readOnly=true;btn.parentNode.appendChild(ta);ta.select();
+   try{document.execCommand("copy");btn.textContent="Kopiert"}catch(e){btn.textContent="Text markieren"}
+  });
+  setTimeout(function(){btn.textContent=label},2500);
+ }
+
+ $("mk").onclick=function(){
+  var o=names.slice();
+  for(var i=o.length-1;i>0;i--){var j=rnd(i+1);var t=o[i];o[i]=o[j];o[j]=t}
+  var note=$("note").value.trim(),ul=$("codes");ul.innerHTML="";
+  names.forEach(function(n){
+   var r=o[(o.indexOf(n)+1)%o.length],c=enc({n:n,r:r,h:note});
+   var li=document.createElement("li"),s=document.createElement("span");s.textContent=n;
+   var b=document.createElement("button");b.className="ghost sm";b.textContent="Nachricht kopieren";
+   b.onclick=function(){
+    var l=$("link").value.trim();
+    l=l.split("#")[0];copy(l?"Hallo "+n+"! Hier ist dein persönlicher Wichtel-Link (bitte nicht weitergeben):\n"+l+"#"+c:"Hallo "+n+"! Hier ist dein Wichtel-Code:\n"+c,b,"Nachricht kopieren");
+   };
+   li.appendChild(s);li.appendChild(b);ul.appendChild(li);
+  });
+  $("res").hidden=false;
+ };
+
+ $("show").onclick=function(){
+  var out=$("out"),err=$("derr");out.innerHTML="";err.textContent="";
+  var d;
+  try{d=dec($("code").value);if(!d.n||!d.r)throw 0}catch(e){err.textContent="Der Code ist ungültig. Bitte komplett kopieren und einfügen.";return}
+  var res=document.createElement("div");res.className="res";
+  var h=document.createElement("p");h.style.margin="0";h.textContent="Hallo "+d.n+", du beschenkst";
+  var b=document.createElement("b");b.textContent=d.r;
+  res.appendChild(h);res.appendChild(b);
+  if(d.h){var p=document.createElement("p");p.className="small";p.style.margin=".6rem 0 0";p.textContent=d.h;res.appendChild(p)}
+  out.appendChild(res);
+ };
+ function fromHash(){var h=location.hash.slice(1);if(h.length>8){tab("draw");$("code").value=h;$("show").onclick()}}
+ if(/^https?:$/.test(location.protocol))$("link").value=location.href.split("#")[0];
+ fromHash();window.addEventListener("hashchange",fromHash);
+})();
+</script>
+</body>
+</html>
